@@ -29,8 +29,18 @@
     position:relative; overflow:hidden;
     display:flex; flex-direction:column;
   }
-  .screen{display:none; flex-direction:column; height:100%; width:100%;}
+  .screen{display:none; flex-direction:column; height:100%; width:100%; position:relative;}
   .screen.active{display:flex;}
+
+  .snd-fab{
+    position:absolute; top:12px; right:12px; width:38px; height:38px; border-radius:50%;
+    border:none; background:#fff; box-shadow:0 3px 8px rgba(0,0,0,0.18); font-size:17px; cursor:pointer; z-index:50;
+  }
+  .snd-fab:active{transform:scale(0.92);}
+  .hud-sound{
+    border:none; background:rgba(255,255,255,0.22); color:#fff; border-radius:8px;
+    padding:3px 7px; font-size:15px; cursor:pointer;
+  }
 
   /* ---------- shared bits ---------- */
   .btn{
@@ -104,9 +114,24 @@
   @keyframes lineMove{from{background-position-x:0;}to{background-position-x:-52px;}}
 
   #player{
-    position:absolute; left:60px; bottom:78px; font-size:38px; line-height:1;
-    transform-origin:bottom center; z-index:10; filter:drop-shadow(0 4px 2px rgba(0,0,0,.25));
+    position:absolute; left:60px; bottom:78px; width:30px; height:48px;
+    transform-origin:bottom center; z-index:10;
   }
+  #player::after{
+    content:""; position:absolute; bottom:-3px; left:50%; margin-left:-10px;
+    width:20px; height:5px; background:rgba(0,0,0,0.18); border-radius:50%;
+  }
+  .p-hair{position:absolute; top:-2px; left:50%; margin-left:-10px; width:20px; height:11px; border-radius:10px 10px 0 0; background:#5B3A29;}
+  .p-head{position:absolute; top:0; left:50%; margin-left:-9px; width:18px; height:18px; border-radius:50%; background:#FFD9B3;}
+  .p-body{position:absolute; top:16px; left:50%; margin-left:-9px; width:18px; height:17px; border-radius:7px; background:#FF8FAB;}
+  .p-arm{position:absolute; top:18px; width:5px; height:13px; border-radius:3px; background:#FFD9B3; transform-origin:top center;}
+  .p-arm-l{left:2px;}
+  .p-arm-r{right:2px;}
+  .p-leg{position:absolute; bottom:0; width:6px; height:15px; border-radius:3px 3px 0 0; background:#7C5CBF; transform-origin:top center;}
+  .p-leg-l{left:6px;}
+  .p-leg-r{right:6px;}
+  .p-leg::after{content:""; position:absolute; bottom:-2px; left:-1px; width:8px; height:4px; border-radius:2px; background:#FFF8F0;}
+
   @keyframes jumpArc{
     0%{transform:translateY(0);}
     35%{transform:translateY(-78px);}
@@ -114,8 +139,24 @@
     100%{transform:translateY(0);}
   }
   #player.jump{animation:jumpArc .55s ease-out;}
-  #player.flash{animation:flashHit .4s ease-in-out 2;}
-  @keyframes flashHit{0%,100%{filter:drop-shadow(0 4px 2px rgba(0,0,0,.25));} 50%{filter:brightness(2) drop-shadow(0 0 10px red);}}
+  #player.flash .p-head, #player.flash .p-body, #player.flash .p-hair, #player.flash .p-arm, #player.flash .p-leg{
+    animation:flashHit .4s ease-in-out 2;
+  }
+  @keyframes flashHit{0%,100%{filter:none;} 50%{filter:brightness(1.9) drop-shadow(0 0 6px #E63950);}}
+
+  @keyframes legSwingL{0%,100%{transform:rotate(26deg);}50%{transform:rotate(-26deg);}}
+  @keyframes legSwingR{0%,100%{transform:rotate(-26deg);}50%{transform:rotate(26deg);}}
+  @keyframes armSwingL{0%,100%{transform:rotate(-24deg);}50%{transform:rotate(24deg);}}
+  @keyframes armSwingR{0%,100%{transform:rotate(24deg);}50%{transform:rotate(-24deg);}}
+  @keyframes bodyBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
+  .player.running .p-leg-l,#player.running .p-leg-l{animation:legSwingL .3s ease-in-out infinite;}
+  .player.running .p-leg-r,#player.running .p-leg-r{animation:legSwingR .3s ease-in-out infinite;}
+  .player.running .p-arm-l,#player.running .p-arm-l{animation:armSwingL .3s ease-in-out infinite;}
+  .player.running .p-arm-r,#player.running .p-arm-r{animation:armSwingR .3s ease-in-out infinite;}
+  .player.running .p-body,.player.running .p-head,.player.running .p-hair,#player.running .p-body,#player.running .p-head,#player.running .p-hair{animation:bodyBob .3s ease-in-out infinite;}
+  .player.jump .p-leg-l,.player.jump .p-leg-r,#player.jump .p-leg-l,#player.jump .p-leg-r{animation:none; transform:rotate(36deg);}
+  .player.jump .p-arm-l,#player.jump .p-arm-l{animation:none; transform:rotate(-55deg);}
+  .player.jump .p-arm-r,#player.jump .p-arm-r{animation:none; transform:rotate(55deg);}
 
   .item{
     position:absolute; font-size:32px; line-height:1; z-index:8;
@@ -178,6 +219,7 @@
 
   <!-- START -->
   <div id="screen-start" class="screen active">
+    <button class="sound-btn snd-fab">🔊</button>
     <div class="title-text">🌟マジカルストリート🌟</div>
     <div class="start-emojis"><span>🧒</span><span>🐶</span><span>🐱</span><span>⭐</span></div>
     <div class="tagline">街をはしって、コインや星をあつめよう。<br>動物にタッチして、どうぶつの国にまねこう!</div>
@@ -194,19 +236,29 @@
       <div class="hud-right">
         <span id="scoreDisplay">🪙 0</span>
         <span id="animalDisplay">🐾 0</span>
+        <button class="sound-btn hud-sound">🔊</button>
       </div>
     </div>
     <div id="gameArea">
       <div class="sun"></div>
       <div class="buildings"></div>
       <div class="road"></div>
-      <div id="player">🧒</div>
+      <div id="player">
+        <div class="p-hair"></div>
+        <div class="p-head"></div>
+        <div class="p-arm p-arm-l"></div>
+        <div class="p-arm p-arm-r"></div>
+        <div class="p-body"></div>
+        <div class="p-leg p-leg-l"></div>
+        <div class="p-leg p-leg-r"></div>
+      </div>
     </div>
     <div class="hint">画面タップでジャンプ・動物はタッチで助けよう♪</div>
   </div>
 
   <!-- GAME OVER -->
   <div id="screen-gameover" class="screen">
+    <button class="sound-btn snd-fab">🔊</button>
     <div class="go-emoji">🎉</div>
     <div class="title-text" style="font-size:26px;">ゲームおわり!</div>
     <div class="result-card" id="resultCard"></div>
@@ -218,6 +270,7 @@
 
   <!-- KINGDOM -->
   <div id="screen-kingdom" class="screen">
+    <button class="sound-btn snd-fab">🔊</button>
     <div class="kingdom-header">🐾 どうぶつの国 🐾</div>
     <div class="kingdom-scroll">
       <div id="kingdomGrid" class="kingdom-grid"></div>
@@ -241,6 +294,98 @@
   var ZONE_RIGHT = PLAYER_X + 56;
   var HOUSE_COLORS = ["#FFE3D1","#D9F2E6","#E3D9FB","#FFE0EE","#DCEFFB","#FFF3C7"];
 
+  // ---------- audio engine (synthesized, no external files) ----------
+  var audioCtx = null;
+  var bgmTimer = null;
+  var bgmActive = false;
+  var bgmIndex = 0;
+  var BGM_NOTES = [
+    {f:523.25,d:0.22},{f:659.25,d:0.22},{f:783.99,d:0.22},{f:659.25,d:0.22},
+    {f:587.33,d:0.22},{f:698.46,d:0.22},{f:880.00,d:0.22},{f:698.46,d:0.22}
+  ];
+
+  function ensureAudio(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+  }
+
+  function tone(freq, startOffset, dur, type, vol){
+    if(!audioCtx || !state.musicOn) return;
+    var t0 = audioCtx.currentTime + startOffset;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol || 0.18, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  }
+
+  function seJump(){
+    if(!audioCtx || !state.musicOn) return;
+    var t = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(640, t + 0.12);
+    gain.gain.setValueAtTime(0.14, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.15);
+  }
+  function seCoin(){ tone(880,0,0.09,'square',0.12); tone(1318.5,0.07,0.12,'square',0.12); }
+  function seRescue(){ tone(523.25,0,0.12,'triangle',0.18); tone(659.25,0.09,0.12,'triangle',0.18); tone(783.99,0.18,0.2,'triangle',0.18); }
+  function seHit(){
+    if(!audioCtx || !state.musicOn) return;
+    var t = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 0.25);
+    gain.gain.setValueAtTime(0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.3);
+  }
+  function seGameOver(){ tone(659.25,0,0.18,'triangle',0.15); tone(523.25,0.18,0.18,'triangle',0.15); tone(440,0.36,0.18,'triangle',0.15); tone(349.23,0.54,0.35,'triangle',0.15); }
+  function seTap(){ tone(700,0,0.05,'sine',0.07); }
+
+  function playBgmStep(){
+    if(!bgmActive || !state.musicOn || !audioCtx) return;
+    var note = BGM_NOTES[bgmIndex % BGM_NOTES.length];
+    tone(note.f, 0, note.d*0.9, 'triangle', 0.05);
+    bgmIndex++;
+    bgmTimer = setTimeout(playBgmStep, note.d*1000);
+  }
+  function startBgm(){
+    ensureAudio();
+    if(bgmActive || !audioCtx) return;
+    bgmActive = true; bgmIndex = 0;
+    playBgmStep();
+  }
+  function stopBgm(){ bgmActive = false; clearTimeout(bgmTimer); }
+
+  function toggleSound(){
+    ensureAudio();
+    state.musicOn = !state.musicOn;
+    document.querySelectorAll('.sound-btn').forEach(function(b){ b.textContent = state.musicOn ? '🔊' : '🔇'; });
+    if(state.musicOn){ startBgm(); } else { stopBgm(); }
+  }
+
+  document.body.addEventListener('click', function initAudioOnce(){
+    ensureAudio();
+    if(state.musicOn) startBgm();
+    document.body.removeEventListener('click', initAudioOnce);
+  }, {once:true});
+
+  document.querySelectorAll('.sound-btn').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); toggleSound(); });
+  });
+
   // ---------- state ----------
   var state = {
     running:false,
@@ -254,7 +399,8 @@
     rescued:[],     // {id, kind, emoji, happiness, houseIdx}
     spawnTimer:null,
     rafId:null,
-    speed:3.0
+    speed:3.0,
+    musicOn:true
   };
 
   // ---------- elements ----------
@@ -302,6 +448,7 @@
   function jump(){
     if(!state.running || state.isJumping) return;
     state.isJumping = true;
+    seJump();
     playerEl.classList.add('jump');
     setTimeout(function(){
       state.isJumping = false;
@@ -365,6 +512,7 @@
     item.status = 'rescued';
     var idx = state.items.indexOf(item);
     if(idx !== -1) state.items.splice(idx,1);
+    seRescue();
     floatText(item.x, 110, '💖 たすけた!', '#FF6F91');
     item.el.remove();
 
@@ -389,6 +537,7 @@
     state.hearts--;
     updateHUD();
     flashPlayer();
+    seHit();
     floatText(PLAYER_X, 130, '💥', '#E63950');
     state.isInvincible = true;
     setTimeout(function(){ state.isInvincible = false; }, 900);
@@ -411,6 +560,7 @@
         if(item.type === 'treasure' && inZone){
           state.score++;
           updateHUD();
+          seCoin();
           floatText(item.x, 128, '+1', '#FFB100');
           remove = true;
         } else if(item.type === 'animal'){
@@ -447,6 +597,7 @@
     state.items.forEach(function(it){ it.el.remove(); });
     state.items = [];
     updateHUD();
+    playerEl.classList.add('running');
     showScreen('game');
     scheduleSpawn();
     loop();
@@ -454,8 +605,10 @@
 
   function gameOver(){
     state.running = false;
+    playerEl.classList.remove('running');
     clearTimeout(state.spawnTimer);
     cancelAnimationFrame(state.rafId);
+    seGameOver();
     resultCard.innerHTML =
       '🪙 あつめたコイン: ' + state.score + '<br>' +
       '🐾 たすけた動物(るいけい): ' + state.rescued.length + 'ひき';
@@ -463,12 +616,14 @@
   }
 
   function goToKingdom(){
-    if(state.running){ state.running = false; clearTimeout(state.spawnTimer); cancelAnimationFrame(state.rafId); }
+    if(state.running){ state.running = false; playerEl.classList.remove('running'); clearTimeout(state.spawnTimer); cancelAnimationFrame(state.rafId); }
+    seTap();
     renderKingdom();
     showScreen('kingdom');
   }
 
   function goToStart(){
+    seTap();
     showScreen('start');
   }
 
@@ -502,6 +657,7 @@
       card.querySelectorAll('.mini-btn').forEach(function(btn){
         btn.addEventListener('click', function(){
           var act = btn.getAttribute('data-act');
+          seTap();
           if(act === 'pet' || act === 'feed'){
             animal.happiness = Math.min(5, animal.happiness+1);
           } else if(act === 'deco'){
@@ -516,8 +672,8 @@
   }
 
   // ---------- wire up buttons ----------
-  document.getElementById('btnPlay').addEventListener('click', startGame);
-  document.getElementById('btnRetry').addEventListener('click', startGame);
+  document.getElementById('btnPlay').addEventListener('click', function(){ seTap(); startGame(); });
+  document.getElementById('btnRetry').addEventListener('click', function(){ seTap(); startGame(); });
   document.getElementById('btnKingdomFromStart').addEventListener('click', goToKingdom);
   document.getElementById('btnKingdomFromOver').addEventListener('click', goToKingdom);
   document.getElementById('btnBackToStart').addEventListener('click', goToStart);
