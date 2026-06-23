@@ -114,23 +114,19 @@
   @keyframes lineMove{from{background-position-x:0;}to{background-position-x:-52px;}}
 
   #player{
-    position:absolute; left:60px; bottom:78px; width:30px; height:48px;
+    position:absolute; left:56px; bottom:78px; width:36px; height:60px;
     transform-origin:bottom center; z-index:10;
+    image-rendering:pixelated; image-rendering:crisp-edges;
   }
   #player::after{
-    content:""; position:absolute; bottom:-3px; left:50%; margin-left:-10px;
-    width:20px; height:5px; background:rgba(0,0,0,0.18); border-radius:50%;
+    content:""; position:absolute; bottom:-4px; left:50%; margin-left:-12px;
+    width:24px; height:5px; background:rgba(0,0,0,0.18); border-radius:50%;
   }
-  .p-hair{position:absolute; top:-2px; left:50%; margin-left:-10px; width:20px; height:11px; border-radius:10px 10px 0 0; background:#5B3A29;}
-  .p-head{position:absolute; top:0; left:50%; margin-left:-9px; width:18px; height:18px; border-radius:50%; background:#FFD9B3;}
-  .p-body{position:absolute; top:16px; left:50%; margin-left:-9px; width:18px; height:17px; border-radius:7px; background:#FF8FAB;}
-  .p-arm{position:absolute; top:18px; width:5px; height:13px; border-radius:3px; background:#FFD9B3; transform-origin:top center;}
-  .p-arm-l{left:2px;}
-  .p-arm-r{right:2px;}
-  .p-leg{position:absolute; bottom:0; width:6px; height:15px; border-radius:3px 3px 0 0; background:#7C5CBF; transform-origin:top center;}
-  .p-leg-l{left:6px;}
-  .p-leg-r{right:6px;}
-  .p-leg::after{content:""; position:absolute; bottom:-2px; left:-1px; width:8px; height:4px; border-radius:2px; background:#FFF8F0;}
+  #player canvas{
+    display:block; image-rendering:pixelated; image-rendering:crisp-edges;
+  }
+  #player.flash canvas{animation:flashHit .4s ease-in-out 2;}
+  @keyframes flashHit{0%,100%{filter:none;} 50%{filter:brightness(1.9) drop-shadow(0 0 6px #E63950);}}
 
   @keyframes jumpArc{
     0%{transform:translateY(0);}
@@ -139,24 +135,6 @@
     100%{transform:translateY(0);}
   }
   #player.jump{animation:jumpArc .55s ease-out;}
-  #player.flash .p-head, #player.flash .p-body, #player.flash .p-hair, #player.flash .p-arm, #player.flash .p-leg{
-    animation:flashHit .4s ease-in-out 2;
-  }
-  @keyframes flashHit{0%,100%{filter:none;} 50%{filter:brightness(1.9) drop-shadow(0 0 6px #E63950);}}
-
-  @keyframes legSwingL{0%,100%{transform:rotate(26deg);}50%{transform:rotate(-26deg);}}
-  @keyframes legSwingR{0%,100%{transform:rotate(-26deg);}50%{transform:rotate(26deg);}}
-  @keyframes armSwingL{0%,100%{transform:rotate(-24deg);}50%{transform:rotate(24deg);}}
-  @keyframes armSwingR{0%,100%{transform:rotate(24deg);}50%{transform:rotate(-24deg);}}
-  @keyframes bodyBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
-  .player.running .p-leg-l,#player.running .p-leg-l{animation:legSwingL .3s ease-in-out infinite;}
-  .player.running .p-leg-r,#player.running .p-leg-r{animation:legSwingR .3s ease-in-out infinite;}
-  .player.running .p-arm-l,#player.running .p-arm-l{animation:armSwingL .3s ease-in-out infinite;}
-  .player.running .p-arm-r,#player.running .p-arm-r{animation:armSwingR .3s ease-in-out infinite;}
-  .player.running .p-body,.player.running .p-head,.player.running .p-hair,#player.running .p-body,#player.running .p-head,#player.running .p-hair{animation:bodyBob .3s ease-in-out infinite;}
-  .player.jump .p-leg-l,.player.jump .p-leg-r,#player.jump .p-leg-l,#player.jump .p-leg-r{animation:none; transform:rotate(36deg);}
-  .player.jump .p-arm-l,#player.jump .p-arm-l{animation:none; transform:rotate(-55deg);}
-  .player.jump .p-arm-r,#player.jump .p-arm-r{animation:none; transform:rotate(55deg);}
 
   .item{
     position:absolute; font-size:32px; line-height:1; z-index:8;
@@ -244,13 +222,7 @@
       <div class="buildings"></div>
       <div class="road"></div>
       <div id="player">
-        <div class="p-hair"></div>
-        <div class="p-head"></div>
-        <div class="p-arm p-arm-l"></div>
-        <div class="p-arm p-arm-r"></div>
-        <div class="p-body"></div>
-        <div class="p-leg p-leg-l"></div>
-        <div class="p-leg p-leg-r"></div>
+        <canvas id="playerCanvas" width="36" height="60"></canvas>
       </div>
     </div>
     <div class="hint">画面タップでジャンプ・動物はタッチで助けよう♪</div>
@@ -293,6 +265,122 @@
   var ZONE_LEFT = PLAYER_X - 14;
   var ZONE_RIGHT = PLAYER_X + 56;
   var HOUSE_COLORS = ["#FFE3D1","#D9F2E6","#E3D9FB","#FFE0EE","#DCEFFB","#FFF3C7"];
+
+  // ---------- pixel art character (18×30, SNES-style sailor uniform girl) ----------
+  var PAL = {
+    '.':null,
+    'K':'#0D0D1A','N':'#1E2D55','n':'#2E4580','b':'#4A70B0',
+    'S':'#FFD5B0','s':'#EFB080','E':'#FFFFFF','e':'#0D0D1A',
+    'c':'#FFB8C8','R':'#CC2233','r':'#991122',
+    'W':'#F4F4F8','w':'#C8C8D4',
+    'J':'#6878A0','j':'#485878',
+    'G':'#8090B0','g':'#5060A0',
+    'O':'#E8E8E0','o':'#A8A898'
+  };
+  var SPR_W=18, SPR_H=30, SCALE=2;
+  var FRAMES=[
+    [ // Frame 0 – left leg forward
+     '...KNNNnnNNK......',
+     '..KNNNnbbnNNNK....',
+     '.KNNNnbbbbnnNNK...',
+     'KNNNnbSSSSsbNNKK..',
+     'KNNNbSSEeSSbNNK...',
+     'KNNnSSSSScsnNK....',
+     '.KNnSSSSSSssK.....',
+     '..KnSSSSSssK......',
+     '...KSSSSssK.......',
+     '..KWWWRrWWwwK.....',
+     '.KWWWrrWWWJJjK....',
+     'KJJWWWwWWJJJjK....',
+     'KJJJWwWWJJJjjK....',
+     'KJJJJJJJJJjjK.....',
+     '.KJJJJJJJJjK......',
+     '.KGGGGGGGGgK......',
+     '.KGGGGGGGGgK......',
+     '.KGGGGGGGGgK......',
+     '..KGGGGGGGgK......',
+     '..KGGGGGGgK.......',
+     '..KGg....gGK......',
+     '.KGGg...gGGK......',
+     'KGGg.....gGK......',
+     'KGg......gGK......',
+     'KOo......oOK......',
+     'Koo......ooK......',
+     '..................',
+     '..................',
+     '..................',
+     '..................',
+    ],
+    [ // Frame 1 – right leg forward
+     '...KNNNnnNNK......',
+     '..KNNNnbbnNNNK....',
+     '.KNNNnbbbbnnNNK...',
+     'KNNNnbSSSSsbNNKK..',
+     'KNNNbSSEeSSbNNK...',
+     'KNNnSSSSScsnNK....',
+     '.KNnSSSSSSssK.....',
+     '..KnSSSSSssK......',
+     '...KSSSSssK.......',
+     '..KWWWRrWWwwK.....',
+     '.KWWWrrWWWJJjK....',
+     'KJJWWWwWWJJJjK....',
+     'KJJJWwWWJJJjjK....',
+     'KJJJJJJJJJjjK.....',
+     '.KJJJJJJJJjK......',
+     '.KGGGGGGGGgK......',
+     '.KGGGGGGGGgK......',
+     '.KGGGGGGGGgK......',
+     '..KGGGGGGGgK......',
+     '..KGGGGGGgK.......',
+     '..KGg....gGK......',
+     '.KGGg...gGGK......',
+     '.KGGg....gGGK.....',
+     '.KGg.....gGK......',
+     '.KOo.....oOK......',
+     '.Koo.....ooK......',
+     '..................',
+     '..................',
+     '..................',
+     '..................',
+    ],
+  ];
+
+  var pCanvas, pCtx, pFrame=0, pTimer=null;
+
+  function initCanvas(){
+    pCanvas = document.getElementById('playerCanvas');
+    pCtx = pCanvas.getContext('2d');
+    pCtx.imageSmoothingEnabled = false;
+    drawFrame(0);
+  }
+
+  function drawFrame(fi){
+    if(!pCtx) return;
+    var rows = FRAMES[fi % FRAMES.length];
+    pCtx.clearRect(0, 0, SPR_W*SCALE, SPR_H*SCALE);
+    for(var r=0; r<rows.length; r++){
+      var row = rows[r];
+      for(var c=0; c<SPR_W; c++){
+        var color = PAL[row[c]||'.'];
+        if(!color) continue;
+        pCtx.fillStyle = color;
+        pCtx.fillRect(c*SCALE, r*SCALE, SCALE, SCALE);
+      }
+    }
+  }
+
+  function startFrameAnim(){
+    clearInterval(pTimer);
+    pFrame=0; drawFrame(0);
+    pTimer = setInterval(function(){
+      pFrame=(pFrame+1)%FRAMES.length;
+      drawFrame(pFrame);
+    }, 130);
+  }
+  function stopFrameAnim(){
+    clearInterval(pTimer);
+    drawFrame(0);
+  }
 
   // ---------- audio engine (synthesized, no external files) ----------
   var audioCtx = null;
@@ -599,6 +687,7 @@
     updateHUD();
     playerEl.classList.add('running');
     showScreen('game');
+    startFrameAnim();
     scheduleSpawn();
     loop();
   }
@@ -606,6 +695,7 @@
   function gameOver(){
     state.running = false;
     playerEl.classList.remove('running');
+    stopFrameAnim();
     clearTimeout(state.spawnTimer);
     cancelAnimationFrame(state.rafId);
     seGameOver();
@@ -616,7 +706,7 @@
   }
 
   function goToKingdom(){
-    if(state.running){ state.running = false; playerEl.classList.remove('running'); clearTimeout(state.spawnTimer); cancelAnimationFrame(state.rafId); }
+    if(state.running){ state.running = false; playerEl.classList.remove('running'); stopFrameAnim(); clearTimeout(state.spawnTimer); cancelAnimationFrame(state.rafId); }
     seTap();
     renderKingdom();
     showScreen('kingdom');
@@ -679,6 +769,7 @@
   document.getElementById('btnBackToStart').addEventListener('click', goToStart);
 
   updateHUD();
+  initCanvas();
 })();
 </script>
 </body>
